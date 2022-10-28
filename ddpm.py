@@ -8,13 +8,15 @@ import torch.nn as nn
 from tqdm import tqdm
 from torch import optim
 # from utils import *
-from modules import WfTransformer
+from my_transformer import WfTransformer
 import logging
 # from torch.utils.tensorboard import SummaryWriter
 import json
 from transformers import BertTokenizer,BertTokenizerFast,T5Tokenizer
 from dataset import CurDataset
 from torch.utils.data import DataLoader
+import numpy as np
+import random
 
 logging.basicConfig(format="%(asctime)s - %(levelname)s: %(message)s", level=logging.INFO, datefmt="%I:%M:%S")
 
@@ -78,21 +80,30 @@ class Diffusion:
 def save_seq(seqlis,path):
     pass
 
+def read_data(dirname):
+    all_data = []
+    for file in os.listdir(dirname):
+        if(file.split('.')[-1] != 'jsonl'):
+            continue
+        doc_seq_data = []
+        with open(os.path.join(dirname,file),'r') as f:
+            for lin in f.readlines():
+                doc_seq_data.append(json.loads(lin.strip()))
+        all_data+=doc_seq_data
+    return all_data
 
 def get_data():
     '''
         获取文本
         这里直接使用bert的tokenizer来做
     '''
-    data = []
-    with open('./train/train.jsonl','r') as f:
-        for lin in f.readlines():
-            data.append(json.loads(lin.strip()))
-            
+    # data = read_data('/opt/data/private/sxu/fwang/idea3/code/data/json/clear_seq_train_data/')    
+    data = read_data('train')
     c_dataset = CurDataset(data)
 
     diff_dataloader = DataLoader(c_dataset, batch_size=4,
                               shuffle=True, collate_fn=c_dataset.collate_fn)
+
     return diff_dataloader
 def train(device,lr,epochs):
     # setup_logging(args.run_name)
@@ -131,9 +142,24 @@ def train(device,lr,epochs):
         # save_images(sampled_images, os.path.join("results", args.run_name, f"{epoch}.jpg"))
         # torch.save(model.state_dict(), os.path.join("models", args.run_name, f"ckpt.pt"))
 
-
+def seed_everything(seed=1226):
+    '''
+    设置整个开发环境的seed
+    :param seed:
+    :return:
+    '''
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    # some cudnn methods can be random even after fixing the seed
+    # unless you tell it to be deterministic
+    torch.backends.cudnn.deterministic = True 
 
 if __name__ == '__main__':
+    seed_everything()
     # diffusion = Diffusion(device='cpu')
     # sentences = torch.randn((3,3,5))
     # print(sentences)

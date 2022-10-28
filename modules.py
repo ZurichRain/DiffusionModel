@@ -29,7 +29,6 @@ class Embeddings(nn.Module):
 
     def forward(self, input_ids):
         # Create position IDs for input sequence
-        # print(input_ids)
         seq_length = input_ids.size(1)
         position_ids = torch.arange(seq_length, dtype=torch.long).unsqueeze(0).to(self.device)
         # Create token and position embeddings
@@ -128,8 +127,6 @@ class MultiHeadAttention(nn.Module):
         
     def forward(self, hidden_state_1, hidden_state_2):
         # hidden_state_1 [batch, seq, 768] --> [headnum, batch, seq ,64]
-        # print(hidden_state_1.size())
-        # print(hidden_state_2.size())
         new_x_shape_for_h1 = (hidden_state_1.size()[0],hidden_state_1.size()[1],self.num_heads,self.head_dim) # [b,s,h,64]
         new_x_shape_for_h2 = (hidden_state_2.size()[0],hidden_state_2.size()[1],self.num_heads,self.head_dim)
         hidden_state_1 = hidden_state_1.view(*new_x_shape_for_h1)
@@ -140,6 +137,7 @@ class MultiHeadAttention(nn.Module):
         x = torch.cat([h(hidden_state_1[idx,:,:,:], hidden_state_2[idx,:,:,:]) for idx,h in enumerate(self.heads)], dim=-1)
         x = self.output_linear(x)
         return x
+
 
 class InteractiveAttention(nn.Module):
     def __init__(self, embed_dim, head_dim):
